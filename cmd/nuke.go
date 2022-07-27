@@ -245,6 +245,9 @@ func (n *Nuke) HandleQueue() {
 
 	for _, item := range n.items {
 		switch item.State {
+		case ItemStateRevenant:
+			item.State = ItemStateNew
+			fallthrough
 		case ItemStateNew:
 			n.HandleRemove(item)
 			item.Print()
@@ -260,13 +263,12 @@ func (n *Nuke) HandleQueue() {
 			n.HandleWait(item, listCache)
 			item.Print()
 		}
-
 	}
 
 	fmt.Println()
-	fmt.Printf("Removal requested: %d waiting, %d failed, %d skipped, %d finished\n\n",
+	fmt.Printf("Removal requested: %d waiting, %d failed, %d skipped, %d finished, %d revenant\n\n",
 		n.items.Count(ItemStateWaiting, ItemStatePending), n.items.Count(ItemStateFailed),
-		n.items.Count(ItemStateFiltered), n.items.Count(ItemStateFinished))
+		n.items.Count(ItemStateFiltered), n.items.Count(ItemStateFinished), n.items.Count(ItemStateRevenant))
 }
 
 func (n *Nuke) HandleRemove(item *Item) {
@@ -309,6 +311,11 @@ func (n *Nuke) HandleWait(item *Item, cache map[string]map[string][]resources.Re
 				}
 			}
 
+			revenant, ok := r.(resources.Revenant)
+			if ok {
+				logrus.Warnf("got revenant: %s - %s", item.Type, revenant.String())
+				item.State = ItemStateRevenant
+			}
 			return
 		}
 	}
