@@ -92,7 +92,7 @@ func (n *Nuke) Run() error {
 	for {
 		n.HandleQueue()
 
-		if n.items.Count(ItemStatePending, ItemStateWaiting, ItemStateNew) == 0 && n.items.Count(ItemStateFailed) > 0 {
+		if n.items.Count(ItemStatePending, ItemStateWaiting, ItemStateNew, ItemStateRevenant) == 0 && n.items.Count(ItemStateFailed) > 0 {
 			if failCount >= 2 {
 				logrus.Errorf("There are resources in failed state, but none are ready for deletion, anymore.")
 				fmt.Println()
@@ -113,7 +113,7 @@ func (n *Nuke) Run() error {
 		} else {
 			failCount = 0
 		}
-		if n.Parameters.MaxWaitRetries != 0 && n.items.Count(ItemStateWaiting, ItemStatePending) > 0 && n.items.Count(ItemStateNew) == 0 {
+		if n.Parameters.MaxWaitRetries != 0 && n.items.Count(ItemStateWaiting, ItemStatePending, ItemStateRevenant) > 0 && n.items.Count(ItemStateNew) == 0 {
 			if waitingCount >= n.Parameters.MaxWaitRetries {
 				return fmt.Errorf("Max wait retries of %d exceeded.\n\n", n.Parameters.MaxWaitRetries)
 			}
@@ -121,7 +121,7 @@ func (n *Nuke) Run() error {
 		} else {
 			waitingCount = 0
 		}
-		if n.items.Count(ItemStateNew, ItemStatePending, ItemStateFailed, ItemStateWaiting) == 0 {
+		if n.items.Count(ItemStateNew, ItemStatePending, ItemStateFailed, ItemStateWaiting, ItemStateRevenant) == 0 {
 			break
 		}
 
@@ -313,7 +313,7 @@ func (n *Nuke) HandleWait(item *Item, cache map[string]map[string][]resources.Re
 
 			revenant, ok := r.(resources.Revenant)
 			if ok {
-				logrus.Warnf("got revenant: %s - %s", item.Type, revenant.String())
+				fmt.Printf("Revenant: %s - %s - %s\n", region, item.Type, revenant.String())
 				item.State = ItemStateRevenant
 			}
 			return
