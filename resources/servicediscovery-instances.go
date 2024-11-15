@@ -48,28 +48,31 @@ func ListServiceDiscoveryInstances(sess *session.Session) ([]Resource, error) {
 
 	//Collect Instances for de-registration
 	for _, service := range services {
-		instanceParams := &servicediscovery.ListInstancesInput{
-			ServiceId:  service.Id,
-			MaxResults: aws.Int64(100),
-		}
+		var listInstancesToken *string
+		for {
+			instanceParams := &servicediscovery.ListInstancesInput{
+				ServiceId:  service.Id,
+				MaxResults: aws.Int64(100),
+				NextToken:  listInstancesToken,
+			}
 
-		output, err := svc.ListInstances(instanceParams)
-		if err != nil {
-			return nil, err
-		}
+			output, err := svc.ListInstances(instanceParams)
+			if err != nil {
+				return nil, err
+			}
 
-		for _, instance := range output.Instances {
-			resources = append(resources, &ServiceDiscoveryInstance{
-				svc:        svc,
-				serviceID:  service.Id,
-				instanceID: instance.Id,
-			})
+			for _, instance := range output.Instances {
+				resources = append(resources, &ServiceDiscoveryInstance{
+					svc:        svc,
+					serviceID:  service.Id,
+					instanceID: instance.Id,
+				})
+			}
+			if output.NextToken == nil {
+				break
+			}
+			listInstancesToken = output.NextToken
 		}
-		if output.NextToken == nil {
-			break
-		}
-
-		params.NextToken = output.NextToken
 	}
 
 	return resources, nil
